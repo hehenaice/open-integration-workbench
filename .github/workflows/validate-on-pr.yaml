@@ -251,6 +251,7 @@ jobs:
           pip install --upgrade pip
           pip install -e apps/cli
           pip install -e apps/mcp-server
+          pip install pytest
       - name: Run pytest
         env:
           OIW_WORKSPACE: ${{ github.workspace }}/examples
