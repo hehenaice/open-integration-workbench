@@ -13,6 +13,8 @@ These tests are skipped if the JVM bridge is not available (no Java or no JAR).
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from oiw.project import FlowNode
@@ -20,10 +22,22 @@ from oiw.runtime.context import MessageContext
 from oiw.runtime.steps.base import get_plugin
 from oiw.runtime.steps.groovy_script import _find_jvm_bridge
 
-# Skip all tests if JVM bridge is not available
+
+def _jvm_bridge_runnable() -> bool:
+    """Check if the JVM bridge is actually runnable (JARs + compiled classes exist)."""
+    bridge = _find_jvm_bridge()
+    if bridge is None:
+        return False
+    bridge_dir = Path(bridge).parent
+    has_jars = (bridge_dir / "lib" / "groovy-4.0.22.jar").exists()
+    has_classes = (bridge_dir / "build" / "io").is_dir()
+    return has_jars and has_classes
+
+
+# Skip all tests if JVM bridge is not actually runnable
 pytestmark = pytest.mark.skipif(
-    _find_jvm_bridge() is None,
-    reason="JVM Groovy bridge not available — requires Java + compiled JAR. "
+    not _jvm_bridge_runnable(),
+    reason="JVM Groovy bridge not runnable — requires Java + Groovy JARs + compiled classes. "
     "Run: cd services/runtime-worker-jvm && javac -cp 'lib/*' -d build src/main/java/io/oiw/groovy/GroovyRunner.java",
 )
 
