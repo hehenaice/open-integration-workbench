@@ -167,7 +167,9 @@ class GroovyScript(StepPlugin):
                             and "not found" in output.get("error", {}).get("message", "").lower()
                         ):
                             # Bridge unavailable — fall back to stub
-                            ctx.add_trace(node.id, "enter", "JVM bridge unavailable — using stub interpreter (DEV-003)")
+                            ctx.add_trace(
+                                node.id, "enter", "JVM bridge unavailable — using stub interpreter (DEV-003)"
+                            )
                             self._run_stub_dsl(script_text, ctx)
                             ctx.add_trace(node.id, "exit", "groovy script executed (stub fallback)")
                             return ctx
