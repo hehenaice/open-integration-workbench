@@ -157,6 +157,23 @@ class GroovyScript(StepPlugin):
             )
 
             if result.returncode != 0:
+                # Check if the output is a JSON "bridge unavailable" response
+                stdout = result.stdout.strip() if result.stdout else ""
+                if stdout:
+                    try:
+                        output = json.loads(stdout)
+                        if (
+                            output.get("status") == "FAILED"
+                            and "not found" in output.get("error", {}).get("message", "").lower()
+                        ):
+                            # Bridge unavailable — fall back to stub
+                            ctx.add_trace(node.id, "enter", "JVM bridge unavailable — using stub interpreter (DEV-003)")
+                            self._run_stub_dsl(script_text, ctx)
+                            ctx.add_trace(node.id, "exit", "groovy script executed (stub fallback)")
+                            return ctx
+                    except json.JSONDecodeError:
+                        pass
+
                 ctx.exchange_status = ExchangeStatus.FAILED
                 ctx.exception = RuntimeError(
                     f"JVM bridge exited with code {result.returncode}: {result.stderr}"
