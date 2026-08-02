@@ -1,20 +1,19 @@
 // normalizeOrder.groovy
-// Spec ref: §26.3 reference scenario. DEV-003: this runs in a constrained
-// stub interpreter (apps/cli/oiw/runtime/steps/groovy_script.py) for the
-// Python prototype; full Groovy execution deferred to Phase 2.
+// Spec ref: §26.3 reference scenario.
 //
-// The stub supports a tiny subset:
-//   message.setHeader('X', 'value')
-//   message.setProperty('Y', 'value')
-//   message.setBody('text')
+// Executed via the OIW JVM Groovy bridge (services/runtime-worker-jvm).
+// The bridge provides: body (String), headers (Map), properties (Map), contentType (String).
 //
-// In production this would be full Groovy using the SAP Message API stubs
-// (com.sap.it.api.mapping.MappingContext, org.apache.camel.Message).
+// This script parses the JSON body and extracts the region field,
+// then sets it as a property so the content-based router can branch on it.
 
-def bodyText = message.getBody()
-def region = "GLOBAL" // default
+import groovy.json.JsonSlurper
 
-// Stub: set the region property so the router can branch on it.
-// In the real Groovy implementation this would parse the JSON body and
-// extract the region. The stub interpreter ignores unrecognised lines.
-message.setProperty("region", "EU")
+def json = new JsonSlurper().parseText(body)
+def region = json.region ?: "GLOBAL"
+
+// Set the region property so the router can branch on it
+properties["region"] = region
+
+// Add a normalization header
+headers["X-Normalized-By"] = "oiw-groovy-bridge"
